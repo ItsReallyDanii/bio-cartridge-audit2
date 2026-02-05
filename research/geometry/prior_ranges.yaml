@@ -1,0 +1,23 @@
+stenocara_profile:
+  status: "refined"
+  evidence_level: "literature-derived"
+  k_w_eff: [0.015, 0.003, 0.008, 0.045]
+  eta_mean: [0.12, 0.03, 0.05, 0.35]
+  M_max: [0.5, 0.1, 0.2, 1.0]
+  RH_surface: [50.0, 5.0, 30.0, 80.0]
+
+sphagnum_profile:
+  status: "refined"
+  evidence_level: "literature-derived"
+  k_w_eff: [0.008, 0.002, 0.004, 0.018]
+  eta_mean: [0.35, 0.08, 0.15, 0.75]
+  M_max: [1.8, 0.4, 0.8, 3.5]
+  RH_surface: [40.0, 8.0, 20.0, 90.0]
+
+cactaceae_profile:
+  status: "refined"
+  evidence_level: "literature-derived"
+  k_w_eff: [0.012, 0.002, 0.006, 0.025]
+  eta_mean: [0.08, 0.02, 0.02, 0.20]
+  M_max: [1.2, 0.3, 0.6, 2.5]
+  RH_surface: [55.0, 5.0, 40.0, 75.0]
