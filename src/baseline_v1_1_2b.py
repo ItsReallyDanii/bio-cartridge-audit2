@@ -121,7 +121,7 @@ def run_simulation(s_set):
         mi_acc = 0.0
 
         for t in range(TOTAL_STEPS):
-            mw_acc = np.clip(mw_acc + (Jw * A_EFF * DT), 0.0, max_capacity_i)
+            mw_acc = np.clip(mw_acc + (Jw * A_EFF * DT), 0.0, MAX_CAPACITY)
             mp_acc += dm_p_dt * DT
             mi_acc += dm_i_dt * DT
 
