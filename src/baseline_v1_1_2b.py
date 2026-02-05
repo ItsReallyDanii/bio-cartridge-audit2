@@ -20,8 +20,10 @@ V_THRESH = 8.0
 
 A_FACE = 0.05
 A_EFF = 0.12
-M_MAX = 0.5
-MAX_CAPACITY = M_MAX * A_EFF
+
+# Baseline fallback (legacy constant path)
+BASELINE_M_MAX = 0.5  # kg/m^2
+MAX_CAPACITY = BASELINE_M_MAX * A_EFF
 
 # Locked baseline defaults (tests import this)
 DEFAULT_PRIORS = {
@@ -33,6 +35,8 @@ DEFAULT_PRIORS = {
     "k_w_eff":     [0.01, 0.002, 1e-4, 0.1],
     "eta_mean":    [0.15, 0.03, 0.0, 1.0],
     "RH_surface":  [50.0, 0.0, 0.0, 100.0],
+    # Added so CLI/YAML can legally override storage-capacity model
+    "M_max":       [0.5, 0.1, 0.2, 1.0],  # kg/m^2
 }
 
 ALLOWED_OVERRIDE_KEYS = set(DEFAULT_PRIORS.keys())
@@ -81,12 +85,15 @@ def get_omega(T, RH, P=101.325):
 def run_simulation(s_set):
     """
     Uses dynamic local sample count so tests can run low-N quickly.
+    Supports optional per-sample M_max (kg/m^2). If absent, uses BASELINE_M_MAX.
     """
     n_samples_local = len(next(iter(s_set.values())))
 
     mw_ledger = np.zeros((n_samples_local, TOTAL_STEPS))
     mp_ledger = np.zeros((n_samples_local, TOTAL_STEPS))
     mi_ledger = np.zeros((n_samples_local, TOTAL_STEPS))
+
+    has_mmax = "M_max" in s_set
 
     for i in range(n_samples_local):
         T = s_set["T_air"][i]
@@ -97,6 +104,10 @@ def run_simulation(s_set):
         kw = s_set["k_w_eff"][i]
         eta = s_set["eta_mean"][i]
         rh_s = s_set["RH_surface"][i]
+
+        # Dynamic capacity path
+        m_max_i = max(s_set["M_max"][i], 0.0) if has_mmax else BASELINE_M_MAX
+        max_capacity_i = m_max_i * A_EFF
 
         kw_clamped = max(kw, 0.0)
         Jw = kw_clamped * (get_omega(T, rh) - get_omega(T, rh_s))  # evaporation allowed via sign
@@ -110,7 +121,7 @@ def run_simulation(s_set):
         mi_acc = 0.0
 
         for t in range(TOTAL_STEPS):
-            mw_acc = np.clip(mw_acc + (Jw * A_EFF * DT), 0.0, MAX_CAPACITY)
+            mw_acc = np.clip(mw_acc + (Jw * A_EFF * DT), 0.0, max_capacity_i)
             mp_acc += dm_p_dt * DT
             mi_acc += dm_i_dt * DT
 
@@ -137,10 +148,16 @@ def _print_reports(samples, mw, mp, mi):
     final_mi_mg = mi[:, -1] * 1e6
     final_mw_kg = mw[:, -1]
 
+    # Use dynamic capacity if available; else legacy constant
+    if "M_max" in samples:
+        cap_vec = np.clip(samples["M_max"], 0.0, None) * A_EFF
+    else:
+        cap_vec = np.full_like(final_mw_kg, MAX_CAPACITY)
+
     probs = [
         np.mean(samples["v_air"] > V_THRESH) * 100.0,
         np.mean(final_mi_mg < NOISE_FLOOR_MG) * 100.0,
-        np.mean(final_mw_kg >= MAX_CAPACITY * 0.98) * 100.0,
+        np.mean(final_mw_kg >= cap_vec * 0.98) * 100.0,
     ]
 
     statuses = []
