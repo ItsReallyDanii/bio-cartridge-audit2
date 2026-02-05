@@ -30,3 +30,6 @@ python src/baseline_v1_1_2b.py --profile stenocara_profile
 ```bash
 python src/baseline_v1_1_2b.py --set eta_mean=0.3,0.05,0.1,0.5
 ```
+
+## Current Status
+Current status: Phase 4 benchmark complete; awaiting default-profile selection for operational runs.
